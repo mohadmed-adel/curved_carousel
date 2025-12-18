@@ -10,7 +10,6 @@
 </a>
 <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-purple.svg" alt="MIT License"></a>
 
-
 A Flutter package for easy implementation of curved carousel.
 
 <table>
@@ -21,8 +20,7 @@ A Flutter package for easy implementation of curved carousel.
 
 ### Easy to use
 
-
-``` dart
+```dart
 CurvedCarousel(
       itemBuilder: (context, i) {
         return Item(img: listItem[i].img, selectionChange: (bool){
@@ -32,6 +30,26 @@ CurvedCarousel(
       itemCount: listItem.length,
       middleItemScaleRatio: 1.5,
 )
+```
+
+### Using Controller
+
+You can programmatically control the carousel using `CurvedCarouselController`:
+
+```dart
+final _carouselController = CurvedCarouselController();
+
+CurvedCarousel(
+  controller: _carouselController,
+  itemBuilder: (context, i) => YourWidget(),
+  itemCount: items.length,
+)
+
+// Control from outside:
+_carouselController.next();           // Move to next item
+_carouselController.previous();        // Move to previous item
+_carouselController.jumpTo(5);        // Jump to index 5
+int? current = _carouselController.currentIndex; // Get current index
 ```
 
 ### Attributes
@@ -45,9 +63,11 @@ CurvedCarousel(
 `middleItemScaleRatio` : it is scaling parameter for middle item\
 `tiltItemWithcurve` : does the items angle need to be follow to curve, by default this is true\
 `horizontalPadding` : a padding to apply horizontally to the carousel, the default is no padding\
-`animationDuration`  : a duration of the item change animation in milliseconds, the default value is 300\
+`animationDuration` : a duration of the item change animation in milliseconds, the default value is 300\
 `onChangeEnd` : a function to trigger when the item change animation is done\
 `onChangeStart` : a function to trigger when the item change animation is start\
 `moveAutomatically` : allow to change the current selected item automatically, default is set to false. \
 `automaticMoveDelay` : the delay between automatic movements, default is 5000\
-`reverseAutomaticMovement` : reverse the direction of the automatic movement, default is false
+`reverseAutomaticMovement` : reverse the direction of the automatic movement, default is false\
+`concaveCurve` : the direction of the curve. If `true` the curve is concave (inward, like a bowl) - center item is lower, side items are higher. If `false` the curve is convex (outward, like a hill) - center item is higher, side items are lower. Default is `true`\
+`controller` : a `CurvedCarouselController` to programmatically control the carousel from outside

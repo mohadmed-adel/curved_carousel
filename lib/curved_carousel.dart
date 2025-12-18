@@ -5,6 +5,42 @@ import 'package:flutter/material.dart';
 
 import 'common/swipe_detector.dart';
 
+// Curved Carousel Controller class.
+
+/// Controller to programmatically control the [CurvedCarousel] from outside.
+class CurvedCarouselController {
+  _CurvedCarouselState? _state;
+
+  /// Attaches the controller to the carousel state.
+  void _attach(_CurvedCarouselState state) {
+    _state = state;
+  }
+
+  /// Detaches the controller from the carousel state.
+  void _detach() {
+    _state = null;
+  }
+
+  /// Moves to the next item (swipes right).
+  void next() {
+    _state?.movement(false, false);
+  }
+
+  /// Moves to the previous item (swipes left).
+  void previous() {
+    _state?.movement(false, true);
+  }
+
+  /// Jumps to a specific item index.
+  /// [index] must be between 0 and itemCount - 1.
+  void jumpTo(int index) {
+    _state?.jumpToIndex(index);
+  }
+
+  /// Gets the current selected item index.
+  int? get currentIndex => _state?._currentItemIndex;
+}
+
 // Curved Carousel widget class.
 
 class CurvedCarousel extends StatefulWidget {
@@ -25,7 +61,8 @@ class CurvedCarousel extends StatefulWidget {
       this.moveAutomatically = false,
       this.automaticMoveDelay = 5000,
       this.reverseAutomaticMovement = false,
-      this.concaveCurve = true})
+      this.concaveCurve = true,
+      this.controller})
       : super(key: key);
 
   final Widget Function(BuildContext, int) itemBuilder;
@@ -84,6 +121,9 @@ class CurvedCarousel extends StatefulWidget {
   /// Default is [true] for backward compatibility
   final bool concaveCurve;
 
+  /// Controller to programmatically control the carousel from outside
+  final CurvedCarouselController? controller;
+
   @override
   _CurvedCarouselState createState() => _CurvedCarouselState();
 }
@@ -104,6 +144,9 @@ class _CurvedCarouselState extends State<CurvedCarousel>
   void initState() {
     super.initState();
 
+    // Attach controller if provided
+    widget.controller?._attach(this);
+
     // set up the automatic movement of the carousel
     Timer.periodic(Duration(milliseconds: widget.automaticMoveDelay), (timer) {
       // do not execute the movement if the moveAutomatically is false
@@ -111,6 +154,13 @@ class _CurvedCarouselState extends State<CurvedCarousel>
 
       movement(true, widget.reverseAutomaticMovement);
     });
+  }
+
+  @override
+  void dispose() {
+    // Detach controller when widget is disposed
+    widget.controller?._detach();
+    super.dispose();
   }
 
   @override
@@ -383,6 +433,54 @@ class _CurvedCarouselState extends State<CurvedCarousel>
     // call the on change started function if set
     if (widget.onChangeStart != null) {
       widget.onChangeStart!.call(_currentItemIndex, _currentMovementIsAuto);
+    }
+  }
+
+  /// Jumps to a specific item index.
+  /// Calculates the shortest path and moves step by step to maintain smooth animations.
+  void jumpToIndex(int targetIndex) {
+    if (targetIndex < 0 || targetIndex >= widget.itemCount) {
+      return; // Invalid index
+    }
+
+    int currentIndex = _currentItemIndex;
+    int steps = targetIndex - currentIndex;
+
+    // Handle infinite scrolling - find shortest path
+    if (widget.disableInfiniteScrolling) {
+      // For non-infinite, just move the calculated steps
+      if (steps == 0) return;
+    } else {
+      // For infinite scrolling, find shortest path
+      int forwardSteps = steps >= 0 ? steps : steps + widget.itemCount;
+      int backwardSteps = steps <= 0 ? -steps : widget.itemCount - steps;
+
+      if (forwardSteps <= backwardSteps) {
+        steps = forwardSteps;
+      } else {
+        steps = -backwardSteps;
+      }
+    }
+
+    // Move step by step to maintain animations
+    if (steps > 0) {
+      for (int i = 0; i < steps; i++) {
+        Future.delayed(Duration(milliseconds: widget.animationDuration * i),
+            () {
+          if (mounted) {
+            movement(false, false); // Move right
+          }
+        });
+      }
+    } else if (steps < 0) {
+      for (int i = 0; i < -steps; i++) {
+        Future.delayed(Duration(milliseconds: widget.animationDuration * i),
+            () {
+          if (mounted) {
+            movement(false, true); // Move left
+          }
+        });
+      }
     }
   }
 }
