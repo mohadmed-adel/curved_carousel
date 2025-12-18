@@ -1,6 +1,8 @@
-import 'dart:math';
 import 'dart:async';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+
 import 'common/swipe_detector.dart';
 
 // Curved Carousel widget class.
@@ -22,7 +24,8 @@ class CurvedCarousel extends StatefulWidget {
       this.onChangeStart,
       this.moveAutomatically = false,
       this.automaticMoveDelay = 5000,
-      this.reverseAutomaticMovement = false})
+      this.reverseAutomaticMovement = false,
+      this.concaveCurve = true})
       : super(key: key);
 
   final Widget Function(BuildContext, int) itemBuilder;
@@ -74,6 +77,12 @@ class CurvedCarousel extends StatefulWidget {
   /// If the [moveAutomatically] attribut is [true] then this controls the direction of the automatic change of item
   /// If this attribut is [true] then the movement will move the items backward.
   final bool reverseAutomaticMovement;
+
+  /// The direction of the curve
+  /// If [true] the curve is concave (inward, like a bowl) - center item is lower, side items are higher
+  /// If [false] the curve is convex (outward, like a hill) - center item is higher, side items are lower
+  /// Default is [true] for backward compatibility
+  final bool concaveCurve;
 
   @override
   _CurvedCarouselState createState() => _CurvedCarouselState();
@@ -232,10 +241,13 @@ class _CurvedCarouselState extends State<CurvedCarousel>
     if (_selectedItemIndex == i) {
       return 0;
     }
-    return -((i - _selectedItemIndex).abs() *
+    double curveValue = ((i - _selectedItemIndex).abs() *
             (i - _selectedItemIndex).abs() *
             widget.curveScale)
         .toDouble();
+    // If concaveCurve is true, return negative (side items higher)
+    // If concaveCurve is false, return positive (side items lower)
+    return widget.concaveCurve ? -curveValue : curveValue;
   }
 
   double getCurveX(
@@ -303,8 +315,10 @@ class _CurvedCarouselState extends State<CurvedCarousel>
     if (_selectedItemIndex == i) {
       return 0;
     }
-    return -((i - _selectedItemIndex) * pi / (widget.curveScale + 5))
-        .toDouble();
+    double angle =
+        ((i - _selectedItemIndex) * pi / (widget.curveScale + 5)).toDouble();
+    // Reverse angle direction for convex curve
+    return widget.concaveCurve ? -angle : angle;
   }
 
   double getAngle(int i, double itemWidth, double value) {
